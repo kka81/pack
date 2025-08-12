@@ -12,7 +12,7 @@ check-aur-helper() {
 }
 
 show-done() {
-  echo "Done! Succesfully installed ${pack-name}"
+  echo "Done!"
 }
 
 pack-install() {

@@ -13,9 +13,13 @@ if [ -f /home/$USER/.local/bin/pack ]; then
   echo "Found existing pack. Removing the old one."
 fi
 
+if [ ! -f /usr/bin/fzf ]; then
+  echo "fzf is not installed. Installing it."
+  sudo pacman -S fzf --needed --noconfirm
+fi
+
 echo "Installing pack..."
-curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/main/pack \
+curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/pack \
   -o /home/$USER/.local/bin/pack
 chmod +x /home/$USER/.local/bin/pack
 echo "Succesfully installed pack."
-
