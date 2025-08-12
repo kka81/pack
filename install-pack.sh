@@ -8,11 +8,6 @@ if [ ! -d "$installdir" ]; then
   echo "Successfully created installdir on $installdir"
 fi
 
-if [ -f /home/$USER/.local/bin/pack ]; then
-  rm /home/$USER/.local/bin/pack
-  echo "Found existing pack. Removing the old one."
-fi
-
 if [ ! -f /usr/bin/fzf ]; then
   echo "fzf is not installed. Installing it."
   sudo pacman -S fzf --needed --noconfirm
