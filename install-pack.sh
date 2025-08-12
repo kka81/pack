@@ -17,5 +17,6 @@ echo "Installing pack..."
 curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/pack \
   -o /home/$USER/.local/bin/pack
 chmod +x /home/$USER/.local/bin/pack
+curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/pack.desktop -o /home/$USER/.local/share/applications/pack.desktop
 sudo mv /home/$USER/.local/bin/pack /usr/bin/
 echo "Succesfully installed pack."

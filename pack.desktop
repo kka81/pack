@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Icon=package
+Name=Pack
+Name[en]=Pack
+Name[en_US]=Pack
+Name[en_US.UTF-8]=Pack
+Keywords=aur;download;pack;pacman;paru;pkg;software;store;yay
+Keywords[en]=aur;download;pack;pacman;paru;pkg;software;store;yay
+Keywords[en_US]=aur;download;pack;pacman;paru;pkg;software;store;yay
+Keywords[en_US.UTF-8]=aur;download;pack;pacman;paru;pkg;software;store;yay
+Exec=pack
+Hidden=false
+NoDisplay=false
+StartupNotify=false
+Terminal=true
+
