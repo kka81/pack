@@ -12,10 +12,6 @@ check-aur-helper() {
   fi
 }
 
-show-done() {
-  echo "Done!"
-}
-
 pack-install() {
   fzf_args=(
     --multi
@@ -30,7 +26,6 @@ pack-install() {
 
   if [[ -n "$pack_name" ]]; then
     ${helper} -S "$pack_name"
-    show-done
   fi
 }
 
@@ -48,13 +43,17 @@ pack-uninstall() {
 
   if [[ -n "$pack_name" ]]; then
     ${helper} -Rns "$pack_name"
-    show-done
   fi
 }
 
 pack-update() {
   echo -e "Updating system packages..."
   $helper -Syu
+  echo
+}
+
+pack-clearcache() {
+  $helper -Scc
   echo
 }
 
@@ -68,7 +67,6 @@ install)
 remove)
   pack-uninstall
   ;;
-
 uninstall)
   pack-uninstall
   ;;
@@ -76,7 +74,7 @@ update)
   pack-update
   ;;
 *)
-  choice=$(printf "Quit\nUpdate System\nRemove Packages\nInstall Packages" | fzf --cycle --no-info)
+  choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nClear Cache\nExit" | fzf --cycle --no-info)
   case $choice in
 
   "Install Packages")
@@ -88,7 +86,10 @@ update)
   "Update System")
     pack-update
     ;;
-  "Quit")
+  "Clear Cache")
+    pack-clearcache
+    ;;
+  "Exit")
     exit 0
     ;;
   *)
@@ -97,4 +98,3 @@ update)
   esac
   ;;
 esac
-
