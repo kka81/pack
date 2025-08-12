@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master
 rm ~/.local/bin/pack
 ```
 
-## How to use?
+## Usage
 Simply run ``pack`` inside terminal.
 
 Also ``pack install``, ``pack uninstall`` and ``pack update`` works.
