@@ -8,6 +8,7 @@ check-aur-helper() {
     helper="yay"
   else
     echo "No AUR helper was found. Install yay or paru first."
+    exit 1
   fi
 }
 
