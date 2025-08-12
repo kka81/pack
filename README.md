@@ -2,6 +2,8 @@
 ### Simple TUI package manager for Arch Linux. Supports yay and paru.
 
 ### Install Pack
+First, install [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay).
+Then, install Pack.
 Requires ``curl``
 ```
 curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/install-pack.sh | bash
