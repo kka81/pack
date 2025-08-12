@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# check if paru or yay installed
+check-aur-helper() {
+  if [ -f /bin/paru ]; then
+    helper="paru"
+  elif [ -f /bin/yay ]; then
+    helper="yay"
+  else
+    echo "No AUR helper was found. Install yay or paru first."
+  fi
+}
+
+show-done() {
+  echo "Done! Succesfully installed ${pack-name}"
+}
+
+pack-install() {
+    fzf_args=(
+      --multi
+      --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Sii {1}"
+      --preview-window 'right:60%:wrap'
+      --bind 'alt-p:toggle-preview'
+      --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+      --bind 'alt-k:preview-up,alt-j:preview-down'
+    )
+
+    pack_name=$(paru -Slq | fzf "${fzf_args[@]}")
+
+    if [[ -n "$pack_name" ]]; then
+      ${helper} -S --noconfirm "$pack_name"
+      show-done
+    fi
+}
+
+pack-uninstall() {
+    fzf_args=(
+      --multi
+      --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+      --preview-window 'right:60%:wrap'
+      --bind 'alt-p:toggle-preview'
+      --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+      --bind 'alt-k:preview-up,alt-j:preview-down'
+    )
+
+    pack_name=$(${helper} -Qqe | fzf "${fzf_args[@]}")
+
+    if [[ -n "$pack_name" ]]; then
+      ${helper} -Rns --noconfirm "$pack_name"
+      show-done
+    fi
+}
+
+pack-update() {
+    echo -e "Updating system packages..."
+    $helper -Syu
+    echo
+}
+
+check-aur-helper
+
+case $1 in
+
+  install)
+    pack-install
+  ;;
+  remove)
+    pack-uninstall
+  ;;
+
+  uninstall)
+    pack-uninstall
+  ;;
+  update)
+    pack-update
+  ;;
+  *)
+    choice=$(printf "Quit\nUpdate System\nRemove Packages\nInstall Packages" | fzf --cycle --no-info)
+    case $choice in
+
+      "Install Packages")
+        pack-install
+      ;;
+      "Remove Packages")
+        pack-uninstall
+      ;;
+      "Update System")
+        pack-update
+      ;;
+      "Quit")
+        exit 0
+      ;;
+      *)
+        exit 1
+      ;;
+    esac
+esac
