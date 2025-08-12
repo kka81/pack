@@ -4,17 +4,17 @@
 ### Install Pack
 Requires ``curl``
 ```
-curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/dev/install-pack.sh | bash
+curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/main/install-pack.sh | bash
 ```
 
 ### Update Pack
 Run the install script again.
 ```
-curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/dev/install-pack.sh | bash
+curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/main/install-pack.sh | bash
 ```
 ### Uninstallation
 ```
-rm ~/.local/bin/pack
+sudo rm -r /bin/pack
 ```
 
 ## Usage

@@ -24,4 +24,3 @@ curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master
 chmod +x /home/$USER/.local/bin/pack
 sudo mv /home/$USER/.local/bin/pack /usr/bin/
 echo "Succesfully installed pack."
-
