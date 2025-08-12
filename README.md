@@ -25,5 +25,9 @@ Simply run ``pack`` inside terminal.
 
 Also ``pack install``, ``pack uninstall`` and ``pack update`` works.
 
+## To Do
+- [ ] Add a .desktop file for easy launch.
+- [ ] Add an option for cleaning caches (-Scc)
+
 ## Credits
 Highly inspired by [Omarchy's package installer script](https://github.com/basecamp/omarchy/blob/master/bin/omarchy-pkg-install).
