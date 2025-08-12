@@ -3,6 +3,7 @@
 
 ### Install Pack
 First, install [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay).
+
 Then, install Pack.
 Requires ``curl``
 ```
