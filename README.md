@@ -21,3 +21,6 @@ sudo rm -r /bin/pack
 Simply run ``pack`` inside terminal.
 
 Also ``pack install``, ``pack uninstall`` and ``pack update`` works.
+
+## Credits
+Highly inspired by [Omarchy's package installer script](https://github.com/basecamp/omarchy/blob/master/bin/omarchy-pkg-install).
