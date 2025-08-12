@@ -29,7 +29,7 @@ pack-install() {
   pack_name=$(paru -Slq | fzf "${fzf_args[@]}")
 
   if [[ -n "$pack_name" ]]; then
-    ${helper} -S --noconfirm "$pack_name"
+    ${helper} -S "$pack_name"
     show-done
   fi
 }
@@ -47,7 +47,7 @@ pack-uninstall() {
   pack_name=$(${helper} -Qqe | fzf "${fzf_args[@]}")
 
   if [[ -n "$pack_name" ]]; then
-    ${helper} -Rns --noconfirm "$pack_name"
+    ${helper} -Rns "$pack_name"
     show-done
   fi
 }
