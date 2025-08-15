@@ -23,7 +23,7 @@ check-aur-cache() {
     fi
 
     if [ ! -f "$cache_file" ] || [ $(($(date +%s) - $(stat -c %Y "$cache_file"))) -gt $ttl ]; then
-      force-create-aur-cache
+      create-aur-cache
     fi
 }
 
