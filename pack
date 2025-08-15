@@ -129,6 +129,24 @@ pack-list-aur() {
   fi
 }
 
+pack-list-installed() {
+  choice=$(printf "List All Installed Packages\nOnly List Installed AUR Packages\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
+  case $choice in
+  "List All Installed Packages")
+    pack-uninstall
+    ;;
+  "Only List Installed AUR Packages")
+    pack-list-aur
+    ;;
+  "Go Back")
+    pack-menu
+    ;;
+  *)
+    exit 1
+    ;;
+  esac
+}
+
 pack-menu() {
   choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nAdvanced Options\nExit" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
   case $choice in
@@ -136,7 +154,7 @@ pack-menu() {
     pack-install
     ;;
   "Remove Packages")
-    pack-uninstall
+    pack-list-installed
     ;;
   "Update System")
     pack-update
