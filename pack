@@ -57,6 +57,23 @@ pack-clearcache() {
   echo
 }
 
+pack-list-aur() {
+  fzf_args=(
+    --multi
+    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+    --preview-window 'right:60%:wrap'
+    --bind 'alt-p:toggle-preview'
+    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+    --bind 'alt-k:preview-up,alt-j:preview-down'
+  )
+
+  pack_name=$(${helper} -Qqm | fzf "${fzf_args[@]}" | tr '\n' ' ')
+
+  if [[ -n $pack_name ]]; then
+    ${helper} -Rns $pack_name
+  fi
+}
+
 check-aur-helper
 
 case $1 in
@@ -74,7 +91,7 @@ update)
   pack-update
   ;;
 *)
-  choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nClear Cache\nExit" | fzf --cycle --no-info)
+  choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nInstalled AUR Packages\nClear Cache\nExit" | fzf --cycle --no-info)
   case $choice in
 
   "Install Packages")
@@ -88,6 +105,9 @@ update)
     ;;
   "Clear Cache")
     pack-clearcache
+    ;;
+  "Installed AUR Packages")
+    pack-list-aur
     ;;
   "Exit")
     exit 0
