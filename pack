@@ -16,50 +16,50 @@ check-aur-helper() {
 }
 
 check-aur-cache() {
-    ttl=86400
+  ttl=86400
 
-    if [ ! -d $cache_dir ]; then
-      mkdir -p $cache_dir
-    fi
+  if [ ! -d $cache_dir ]; then
+    mkdir -p $cache_dir
+  fi
 
-    if [ ! -f "$cache_file" ] || [ $(($(date +%s) - $(stat -c %Y "$cache_file"))) -gt $ttl ]; then
-      create-aur-cache
-    fi
+  if [ ! -f "$cache_file" ] || [ $(($(date +%s) - $(stat -c %Y "$cache_file"))) -gt $ttl ]; then
+    create-aur-cache
+  fi
 }
 
 create-aur-cache() {
   echo "Checking AUR status..."
-  if curl -sfI --max-time 5 https://aur.archlinux.org > /dev/null; then
-      echo "AUR is UP. Creating cache..."
-      ${helper} -Slq > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-      echo "Successfully created cache."
+  if curl -sfI --max-time 10 https://aur.archlinux.org >/dev/null; then
+    echo "AUR is UP. Creating cache..."
+    ${helper} -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+    echo "Successfully created cache."
   else
-      echo "Cannot access to AUR. Trying again..."
-      if curl -sfI --max-time 10 https://aur.archlinux.org > /dev/null; then
-        ${helper} -Slq > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-      else
+    echo "Cannot access to AUR. Trying again..."
+    if curl -sfI --max-time 15 https://aur.archlinux.org >/dev/null; then
+      ${helper} -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+    else
       echo "Cannot access to AUR again. Trying slower..."
-        if curl -sfI --max-time 15 https://aur.archlinux.org > /dev/null; then
-          echo "AUR is UP. Creating cache..."
-          ${helper} -Slq > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-          echo "Successfully created cache."
-        else
-          echo "Seems like AUR is down or really slow. Creating cache from pacman."
-          echo "It is recommended to regenerate your cache from advanced options when AUR is up again."
-          echo
-          echo "Enter your sudo password if needed."
-          echo
-          sudo pacman -Slq > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-          echo "Successfully created cache from pacman."
-          sleep 2
-        fi
+      if curl -sfI --max-time 20 https://aur.archlinux.org >/dev/null; then
+        echo "AUR is UP. Creating cache..."
+        ${helper} -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+        echo "Successfully created cache."
+      else
+        echo "Seems like AUR is down or really slow. Creating cache from pacman."
+        echo "It is recommended to regenerate your cache from advanced options when AUR is up again."
+        echo
+        echo "Enter your sudo password if needed."
+        echo
+        sudo pacman -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+        echo "Successfully created cache from pacman."
+        sleep 2
       fi
+    fi
   fi
 }
 
 regen-pack-cache() {
-    create-aur-cache
-    launch-adv-options
+  create-aur-cache
+  launch-adv-options
 }
 
 pack-install() {
@@ -131,40 +131,40 @@ pack-list-aur() {
 
 pack-menu() {
   choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nAdvanced Options\nExit" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
-    case $choice in
-    "Install Packages")
-      pack-install
-      ;;
-    "Remove Packages")
-      pack-uninstall
-      ;;
-    "Update System")
-      pack-update
-      ;;
-    "Advanced Options")
-      launch-adv-options
-      ;;
-    "Exit")
-      exit 0
-      ;;
-    *)
-      exit 1
-      ;;
-    esac
+  case $choice in
+  "Install Packages")
+    pack-install
+    ;;
+  "Remove Packages")
+    pack-uninstall
+    ;;
+  "Update System")
+    pack-update
+    ;;
+  "Advanced Options")
+    launch-adv-options
+    ;;
+  "Exit")
+    exit 0
+    ;;
+  *)
+    exit 1
+    ;;
+  esac
 }
 
 launch-adv-options() {
   choice_adv=$(printf "Clear Helper Cache\nRegenerate Pack Cache\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
   case $choice_adv in
-    "Clear Helper Cache")
-      pack-clear-helper-cache
-      ;;
-    "Regenerate Pack Cache")
-      regen-pack-cache
-      ;;
-    "Go Back")
-      pack-menu
-      ;;
+  "Clear Helper Cache")
+    pack-clear-helper-cache
+    ;;
+  "Regenerate Pack Cache")
+    regen-pack-cache
+    ;;
+  "Go Back")
+    pack-menu
+    ;;
   esac
 }
 
@@ -188,4 +188,3 @@ update)
   pack-menu
   ;;
 esac
-
