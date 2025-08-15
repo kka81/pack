@@ -22,10 +22,10 @@ pack-install() {
     --bind 'alt-k:preview-up,alt-j:preview-down'
   )
 
-  pack_name=$(${helper} -Slq | fzf "${fzf_args[@]}")
+  pack_name=$(${helper} -Slq | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-  if [[ -n "$pack_name" ]]; then
-    ${helper} -S "$pack_name"
+  if [[ -n $pack_name ]]; then
+    ${helper} -S $pack_name
   fi
 }
 
@@ -39,10 +39,10 @@ pack-uninstall() {
     --bind 'alt-k:preview-up,alt-j:preview-down'
   )
 
-  pack_name=$(${helper} -Qqe | fzf "${fzf_args[@]}")
+  pack_name=$(${helper} -Qqe | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-  if [[ -n "$pack_name" ]]; then
-    ${helper} -Rns "$pack_name"
+  if [[ -n $pack_name ]]; then
+    ${helper} -Rns $pack_name
   fi
 }
 
