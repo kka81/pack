@@ -1,5 +1,8 @@
 #!/bin/bash
 
+cache_dir="/home/$USER/.cache/pack"
+cache_file="$cache_dir/cache"
+
 # check if paru or yay installed
 check-aur-helper() {
   if [ -f /bin/paru ]; then
@@ -12,17 +15,67 @@ check-aur-helper() {
   fi
 }
 
+check-aur-cache() {
+    ttl=86400
+
+    if [ ! -d $cache_dir ]; then
+      mkdir -p $cache_dir
+    fi
+
+    if [ ! -f "$cache_file" ] || [ $(($(date +%s) - $(stat -c %Y "$cache_file"))) -gt $ttl ]; then
+      force-create-aur-cache
+    fi
+}
+
+create-aur-cache() {
+  echo "Checking AUR status..."
+  if curl -sfI --max-time 5 https://aur.archlinux.org > /dev/null; then
+      echo "AUR is UP. Creating cache..."
+      ${helper} -Slq > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+      echo "Successfully created cache."
+  else
+      echo "Cannot access to AUR. Trying again..."
+      if curl -sfI --max-time 10 https://aur.archlinux.org > /dev/null; then
+        ${helper} -Slq > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+      else
+      echo "Cannot access to AUR again. Trying slower..."
+        if curl -sfI --max-time 15 https://aur.archlinux.org > /dev/null; then
+          echo "AUR is UP. Creating cache..."
+          ${helper} -Slq > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+          echo "Successfully created cache."
+        else
+          echo "Seems like AUR is down or really slow. Creating cache from pacman."
+          echo "It is recommended to regenerate your cache from advanced options when AUR is up again."
+          echo
+          echo "Enter your sudo password if needed."
+          echo
+          sudo pacman -Slq > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+          echo "Successfully created cache from pacman."
+          sleep 2
+        fi
+      fi
+  fi
+}
+
+regen-pack-cache() {
+    create-aur-cache
+    launch-adv-options
+}
+
 pack-install() {
   fzf_args=(
     --multi
     --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Sii {1}"
-    --preview-window 'right:60%:wrap'
+    --preview-window 'right:50%:wrap:border-bold'
     --bind 'alt-p:toggle-preview'
     --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
     --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
   )
 
-  pack_name=$(${helper} -Slq | fzf "${fzf_args[@]}" | tr '\n' ' ')
+  check-aur-cache
+
+  pack_name=$(cat "${cache_file}" | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
   if [[ -n $pack_name ]]; then
     ${helper} -S $pack_name
@@ -33,10 +86,11 @@ pack-uninstall() {
   fzf_args=(
     --multi
     --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-    --preview-window 'right:60%:wrap'
+    --preview-window 'right:50%:wrap:border-bold'
     --bind 'alt-p:toggle-preview'
     --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
     --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
   )
 
   pack_name=$(${helper} -Qqe | fzf "${fzf_args[@]}" | tr '\n' ' ')
@@ -52,7 +106,7 @@ pack-update() {
   echo
 }
 
-pack-clearcache() {
+pack-clear-helper-cache() {
   $helper -Scc
   echo
 }
@@ -61,10 +115,11 @@ pack-list-aur() {
   fzf_args=(
     --multi
     --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-    --preview-window 'right:60%:wrap'
+    --preview-window 'right:50%:wrap:border-bold'
     --bind 'alt-p:toggle-preview'
     --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
     --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
   )
 
   pack_name=$(${helper} -Qqm | fzf "${fzf_args[@]}" | tr '\n' ' ')
@@ -72,6 +127,45 @@ pack-list-aur() {
   if [[ -n $pack_name ]]; then
     ${helper} -Rns $pack_name
   fi
+}
+
+pack-menu() {
+  choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nAdvanced Options\nExit" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
+    case $choice in
+    "Install Packages")
+      pack-install
+      ;;
+    "Remove Packages")
+      pack-uninstall
+      ;;
+    "Update System")
+      pack-update
+      ;;
+    "Advanced Options")
+      launch-adv-options
+      ;;
+    "Exit")
+      exit 0
+      ;;
+    *)
+      exit 1
+      ;;
+    esac
+}
+
+launch-adv-options() {
+  choice_adv=$(printf "Clear Helper Cache\nRegenerate Pack Cache\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
+  case $choice_adv in
+    "Clear Helper Cache")
+      pack-clear-helper-cache
+      ;;
+    "Regenerate Pack Cache")
+      regen-pack-cache
+      ;;
+    "Go Back")
+      pack-menu
+      ;;
+  esac
 }
 
 check-aur-helper
@@ -91,30 +185,7 @@ update)
   pack-update
   ;;
 *)
-  choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nInstalled AUR Packages\nClear Cache\nExit" | fzf --cycle --no-info)
-  case $choice in
-
-  "Install Packages")
-    pack-install
-    ;;
-  "Remove Packages")
-    pack-uninstall
-    ;;
-  "Update System")
-    pack-update
-    ;;
-  "Clear Cache")
-    pack-clearcache
-    ;;
-  "Installed AUR Packages")
-    pack-list-aur
-    ;;
-  "Exit")
-    exit 0
-    ;;
-  *)
-    exit 1
-    ;;
-  esac
+  pack-menu
   ;;
 esac
+
