@@ -2,6 +2,7 @@
 
 cache_dir="/home/$USER/.cache/pack"
 cache_file="$cache_dir/cache"
+fzf_menu="fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold"
 
 # check if paru or yay installed
 check-aur-helper() {
@@ -28,37 +29,62 @@ check-aur-cache() {
 }
 
 create-aur-cache() {
-  echo "Checking AUR status..."
-  if curl -sfI --max-time 10 https://aur.archlinux.org >/dev/null; then
-    echo "AUR is UP. Creating cache..."
-    ${helper} -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-    echo "Successfully created cache."
-  else
-    echo "Cannot access to AUR. Trying again..."
-    if curl -sfI --max-time 15 https://aur.archlinux.org >/dev/null; then
-      ${helper} -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-    else
-      echo "Cannot access to AUR again. Trying slower..."
-      if curl -sfI --max-time 20 https://aur.archlinux.org >/dev/null; then
-        echo "AUR is UP. Creating cache..."
-        ${helper} -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-        echo "Successfully created cache."
-      else
-        echo "Seems like AUR is down or really slow. Creating cache from pacman."
-        echo "It is recommended to regenerate your cache from advanced options when AUR is up again."
-        echo
-        echo "Enter your sudo password if needed."
-        echo
-        sudo pacman -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-        echo "Successfully created cache from pacman."
-        sleep 2
-      fi
-    fi
-  fi
+  echo "Creating cache..."
+  echo "TIP: If AUR is down, you can create cache without AUR packages from Advanced Options."
+  ${helper} -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+  echo "Successfully created cache."
+}
+
+create-pacman-cache() {
+  echo "This method is recommended only if AUR is not available."
+  echo "If AUR is available, use the other method to regenerate the cache."
+  while true; do
+    read -p "Do you want to continue? (Y/n): " -r choice
+    choice=${choice,,}
+
+    case "$choice" in
+    "" | y | yes)
+      break
+      ;;
+    n | no)
+      echo "Aborted. Going back."
+      cache-regen-selector
+      ;;
+    *)
+      echo "Please enter a valid input."
+      ;;
+    esac
+  done
+
+  echo
+  echo "Enter your sudo password to run pacman command."
+  echo
+  sudo pacman -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+  echo "Successfully created cache from pacman."
+}
+
+cache-regen-selector() {
+  choice=$(printf "Create Cache (Recommended)\nCreate Cache without AUR\nGo Back" | ${fzf_menu})
+  case $choice in
+  "Create Cache (Recommended)")
+    create-aur-cache
+    cache-regen-selector
+    ;;
+  "Create Cache without AUR")
+    create-pacman-cache
+    cache-regen-selector
+    ;;
+  "Go Back")
+    launch-adv-options
+    ;;
+  *)
+    launch-adv-options
+    ;;
+  esac
 }
 
 regen-pack-cache() {
-  create-aur-cache
+  cache-regen-selector
   launch-adv-options
 }
 
@@ -134,33 +160,39 @@ pack-list-installed() {
   case $choice in
   "List All Installed Packages")
     pack-uninstall
+    pack-list-installed
     ;;
   "Only List Installed AUR Packages")
     pack-list-aur
+    pack-list-installed
     ;;
   "Go Back")
     pack-menu
     ;;
   *)
-    exit 1
+    pack-menu
     ;;
   esac
 }
 
 pack-menu() {
-  choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nAdvanced Options\nExit" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
+  choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nAdvanced Options\nExit" | ${fzf_menu})
   case $choice in
   "Install Packages")
     pack-install
+    pack-menu
     ;;
   "Remove Packages")
     pack-list-installed
+    pack-menu
     ;;
   "Update System")
     pack-update
+    pack-menu
     ;;
   "Advanced Options")
     launch-adv-options
+    pack-menu
     ;;
   "Exit")
     exit 0
@@ -172,10 +204,11 @@ pack-menu() {
 }
 
 launch-adv-options() {
-  choice_adv=$(printf "Clear Helper Cache\nRegenerate Pack Cache\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
+  choice_adv=$(printf "Clear Helper Cache\nRegenerate Pack Cache\nGo Back" | ${fzf_menu})
   case $choice_adv in
   "Clear Helper Cache")
     pack-clear-helper-cache
+    launch-adv-options
     ;;
   "Regenerate Pack Cache")
     regen-pack-cache
