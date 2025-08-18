@@ -17,7 +17,7 @@ check-aur-helper() {
 }
 
 check-aur-cache() {
-  ttl=86400
+  ttl=432000
 
   if [ ! -d $cache_dir ]; then
     mkdir -p $cache_dir
