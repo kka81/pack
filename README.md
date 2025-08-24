@@ -1,6 +1,9 @@
 # Pack
 ### Simple TUI package manager for Arch Linux. Supports yay and paru.
 
+Example usage here
+https://youtu.be/JOJlOmrX_ko?si=fVAuSbHqdI0H9N0Z
+
 ### Install Pack
 First, install [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay).
 
