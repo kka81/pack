@@ -133,7 +133,7 @@ pack-uninstall() {
     --padding 2%
   )
 
-  pack_name=$(${helper} -Qqe | fzf "${fzf_args[@]}" | tr '\n' ' ')
+  pack_name=$(${helper} -Qq | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
   if [[ -n $pack_name ]]; then
     ${helper} -Rns $pack_name
@@ -172,7 +172,6 @@ pack-list-aur() {
 pack-list-recent() {
   fzf_args=(
     --multi
-    --no-sort
     --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
     --preview-window 'right:50%:wrap:border-bold'
     --bind 'alt-p:toggle-preview'
@@ -195,7 +194,25 @@ pack-list-recent() {
     fi
   fi
 
-  pack_name=$(expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort | tail -500 | awk '{print $NF}' | tac | fzf "${fzf_args[@]}" | tr '\n' ' ')
+  pack_name=$(expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort | tail -200 | awk '{print $NF}' | tac | fzf "${fzf_args[@]}" | tr '\n' ' ')
+
+  if [[ -n $pack_name ]]; then
+    ${helper} -Rns $pack_name
+  fi
+}
+
+pack-list-orphaned() {
+  fzf_args=(
+    --multi
+    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+    --preview-window 'right:50%:wrap:border-bold'
+    --bind 'alt-p:toggle-preview'
+    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+    --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
+  )
+
+  pack_name=$(${helper} -Qtdq | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
   if [[ -n $pack_name ]]; then
     ${helper} -Rns $pack_name
@@ -203,18 +220,22 @@ pack-list-recent() {
 }
 
 pack-list-installed() {
-  choice=$(printf "List All Installed Packages\nOnly List Installed AUR Packages\nList Recent Installed Packages\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
+  choice=$(printf "List All Installed Packages\nList Recent Installed Packages\nOnly List Installed AUR Packages\nOnly List Orphaned Packages\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
   case $choice in
   "List All Installed Packages")
     pack-uninstall
+    pack-list-installed
+    ;;
+  "List Recent Installed Packages")
+    pack-list-recent
     pack-list-installed
     ;;
   "Only List Installed AUR Packages")
     pack-list-aur
     pack-list-installed
     ;;
-  "List Recent Installed Packages")
-    pack-list-recent
+  "Only List Orphaned Packages")
+    pack-list-orphaned
     pack-list-installed
     ;;
   "Go Back")
