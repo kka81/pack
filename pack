@@ -30,6 +30,7 @@ check-aur-helper() {
   fi
 }
 
+# check if user need to (re)create a package cache
 check-aur-cache() {
   ttl=432000
 
@@ -42,6 +43,7 @@ check-aur-cache() {
   fi
 }
 
+# create package cache
 create-aur-cache() {
   echo "Creating cache..."
   echo "TIP: If AUR is down, you can create cache without AUR packages from Advanced Options."
@@ -49,6 +51,7 @@ create-aur-cache() {
   echo "Successfully created cache."
 }
 
+# optionally create cache from pacman (no AUR)
 create-pacman-cache() {
   echo "This method is recommended only if AUR is not available."
   echo "If AUR is available, use the other method to regenerate the cache."
