@@ -31,6 +31,7 @@ Also ``pack install``, ``pack uninstall`` and ``pack update`` works.
 ## To Do
 - [ X ] Add a .desktop file for easy launch.
 - [ X ] Add an option for cleaning caches (-Scc)
+- [ X ] Add an option to List Recent Installed Packages
 
 ## Credits
 Highly inspired by [Omarchy's package installer script](https://github.com/basecamp/omarchy/blob/master/bin/omarchy-pkg-install).
