@@ -9,29 +9,30 @@ arch=('x86_64')
 license=('GPL3')
 
 depends=(
-    'bash'
-    'fzf'
-    'expac'
+  'bash'
+  'fzf'
+  'expac'
 )
 
-sha256sums=('6d95a2e37d636de73d17c3f2714c065dc7f9fa14d4607f1ca4ac5189a9bd9f98'
-            '6f0715438cbd586f7a4e194169cd853aecacce7f32628bd8d2168d2e4fd1e08e')
+sha256sums=('25b4f404ddb60f4fff4750360b1c87d114ce5fa200b5d106dbbc4862987ff349'
+  '6f0715438cbd586f7a4e194169cd853aecacce7f32628bd8d2168d2e4fd1e08e')
 
 source=(
-    "https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/pack"
-    "https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/pack.desktop"
+  "https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/pack"
+  "https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/pack.desktop"
 )
 
 makedepends=(
-    'curl'
+  'curl'
 )
 
 optdepends=(
-    'paru: AUR support'
-    'yay: AUR support'
+  'paru: AUR support'
+  'yay: AUR support'
 )
 
 package() {
-    install -Dm755 "$srcdir/pack" "$pkgdir/usr/bin/pack"
-    install -Dm644 "$srcdir/pack.desktop" "$pkgdir/usr/share/applications/pack.desktop"
+  install -Dm755 "$srcdir/pack" "$pkgdir/usr/bin/pack"
+  install -Dm644 "$srcdir/pack.desktop" "$pkgdir/usr/share/applications/pack.desktop"
 }
+
