@@ -5,33 +5,19 @@ Example usage here
 https://youtu.be/JOJlOmrX_ko?si=fVAuSbHqdI0H9N0Z
 
 ### Install Pack
-First, install [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay).
-
-Then, install Pack.
-Requires ``curl``
+Requires ``git``
 ```
-curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/install-pack.sh | bash
-```
-
-### Update Pack
-Run the install script again.
-```
-curl -fsSL https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/install-pack.sh | bash
-```
-### Uninstallation
-```
-sudo rm -r /bin/pack && rm -r ~/.local/share/applications/pack.desktop
+git clone https://github.com/elrondforwin/pack.git && cd pack && makepkg -si 
 ```
 
 ## Usage
-Simply run ``pack`` inside terminal.
-
-Also ``pack install``, ``pack uninstall`` and ``pack update`` works.
+Simply run ``pack`` inside terminal. Or launch it through your application launcher.
 
 ## To Do
 - [ X ] Add a .desktop file for easy launch.
 - [ X ] Add an option for cleaning caches (-Scc)
 - [ X ] Add an option to List Recent Installed Packages
+- [ X ] Add PKGBUILD
 
 ## Credits
 Highly inspired by [Omarchy's package installer script](https://github.com/basecamp/omarchy/blob/master/bin/omarchy-pkg-install).

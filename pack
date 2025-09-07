@@ -1,316 +1,301 @@
 #!/bin/bash
 
-cache_dir="/home/$USER/.cache/pack"
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/pack"
+mkdir -p "$cache_dir" 2>/dev/null
 cache_file="$cache_dir/cache"
+
 fzf_menu="fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold"
 
-# check if paru or yay installed
-check-aur-helper() {
-  if [ -f /bin/paru ]; then
-    helper="paru"
-  elif [ -f /bin/yay ]; then
-    helper="yay"
-  else
-    # ask user if they want to install an AUR helper
-    read -p "No AUR helper was found, would you like to install yay? [y/N]: " choiceInstallYay
-    if [ -n "$choiceInstallYay" ] && [ ${choiceInstallYay,,} == y ]; then
-      echo "Installing yay..."
-      # install needed packages
-      sudo pacman -S --needed --noconfirm git base-devel
-      # clone the yay repository and swith to it
-      git clone https://aur.archlinux.org/yay.git && cd yay
-      # compile yay
-      makepkg -si --noconfirm
-      # remove the yay directory
-      cd .. && rm -rf yay
+check_aur_helper() {
+    if command -v paru >/dev/null 2>&1; then
+        helper="paru"
+    elif command -v yay >/dev/null 2>&1; then
+        helper="yay"
     else
-      echo "Exiting pack..."
-      exit 1
+        echo "Error: pack requires 'paru' or 'yay' for AUR operations."
+        echo "Please install one manually:"
+        echo "  yay:  git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si"
+        echo "  paru: git clone https://aur.archlinux.org/paru.git && cd paru && makepkg -si"
+        exit 1
     fi
-  fi
 }
 
-# check if user need to (re)create a package cache
-check-aur-cache() {
-  ttl=432000
+check_aur_cache() {
+    # 5 days
+    local ttl=432000
 
-  if [ ! -d $cache_dir ]; then
-    mkdir -p $cache_dir
-  fi
-
-  if [ ! -f "$cache_file" ] || [ $(($(date +%s) - $(stat -c %Y "$cache_file"))) -gt $ttl ]; then
-    create-aur-cache
-  fi
+    if [ ! -f "$cache_file" ] || [ $(($(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0))) -gt $ttl ]; then
+        create_aur_cache
+    fi
 }
 
-# create package cache
-create-aur-cache() {
-  echo "Creating cache..."
-  echo "TIP: If AUR is down, you can create cache without AUR packages from Advanced Options."
-  ${helper} -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-  echo "Successfully created cache."
+create_aur_cache() {
+    echo "Creating cache..."
+    echo "TIP: If AUR is down, you can create cache without AUR packages from Advanced Options."
+
+    if ! ${helper} -Slq > "$cache_file.tmp" 2>/dev/null; then
+        echo "Failed to fetch package list. Is AUR down?"
+        rm -f "$cache_file.tmp"
+        return 1
+    fi
+
+    mv "$cache_file.tmp" "$cache_file"
+    echo "Successfully created cache."
 }
 
-# optionally create cache from pacman (no AUR)
-create-pacman-cache() {
-  echo "This method is recommended only if AUR is not available."
-  echo "If AUR is available, use the other method to regenerate the cache."
-  while true; do
-    read -p "Do you want to continue? (Y/n): " -r choice
-    choice=${choice,,}
+create_pacman_cache() {
+    echo "This method is recommended only if AUR is not available."
+    echo "If AUR is available, use the other method to regenerate the cache."
 
-    case "$choice" in
-    "" | y | yes)
-      break
-      ;;
-    n | no)
-      echo "Aborted. Going back."
-      cache-regen-selector
-      ;;
-    *)
-      echo "Please enter a valid input."
-      ;;
+    while true; do
+        read -p "Do you want to continue? (Y/n): " -r choice
+        choice=${choice,,}
+
+        case "$choice" in
+            "" | y | yes)
+                break
+                ;;
+            n | no)
+                echo "Aborted. Going back."
+                cache_regen_selector
+                return
+                ;;
+            *)
+                echo "Please enter a valid input."
+                ;;
+        esac
+    done
+
+    echo
+    if pacman -Slq > "$cache_file.tmp" 2>/dev/null; then
+        mv "$cache_file.tmp" "$cache_file"
+        echo "Successfully created cache from pacman."
+    else
+        echo "Failed to generate cache from pacman."
+        rm -f "$cache_file.tmp"
+    fi
+}
+
+cache_regen_selector() {
+    choice=$(printf "Create Cache (Recommended)\nCreate Cache without AUR\nGo Back" | ${fzf_menu})
+    case $choice in
+        "Create Cache (Recommended)")
+            create_aur_cache
+            cache_regen_selector
+            ;;
+        "Create Cache without AUR")
+            create_pacman_cache
+            cache_regen_selector
+            ;;
+        "Go Back")
+            launch_adv_options
+            ;;
+        *)
+            launch_adv_options
+            ;;
     esac
-  done
-
-  echo
-  echo "Enter your sudo password to run pacman command."
-  echo
-  sudo pacman -Slq >"$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
-  echo "Successfully created cache from pacman."
 }
 
-cache-regen-selector() {
-  choice=$(printf "Create Cache (Recommended)\nCreate Cache without AUR\nGo Back" | ${fzf_menu})
-  case $choice in
-  "Create Cache (Recommended)")
-    create-aur-cache
-    cache-regen-selector
-    ;;
-  "Create Cache without AUR")
-    create-pacman-cache
-    cache-regen-selector
-    ;;
-  "Go Back")
-    launch-adv-options
-    ;;
-  *)
-    launch-adv-options
-    ;;
-  esac
+regen_pack_cache() {
+    cache_regen_selector
+    launch_adv_options
 }
 
-regen-pack-cache() {
-  cache-regen-selector
-  launch-adv-options
-}
+pack_install() {
+    local fzf_args=(
+        --multi
+        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Sii {1}"
+        --preview-window 'right:50%:wrap:border-bold'
+        --bind 'alt-p:toggle-preview'
+        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+        --bind 'alt-k:preview-up,alt-j:preview-down'
+        --padding 2%
+    )
 
-pack-install() {
-  fzf_args=(
-    --multi
-    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Sii {1}"
-    --preview-window 'right:50%:wrap:border-bold'
-    --bind 'alt-p:toggle-preview'
-    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-    --bind 'alt-k:preview-up,alt-j:preview-down'
-    --padding 2%
-  )
+    check_aur_cache
 
-  check-aur-cache
+    local pack_name=$(cat "${cache_file}" 2>/dev/null | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-  pack_name=$(cat "${cache_file}" | fzf "${fzf_args[@]}" | tr '\n' ' ')
-
-  if [[ -n $pack_name ]]; then
-    ${helper} -S $pack_name
-  fi
-}
-
-pack-uninstall() {
-  fzf_args=(
-    --multi
-    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-    --preview-window 'right:50%:wrap:border-bold'
-    --bind 'alt-p:toggle-preview'
-    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-    --bind 'alt-k:preview-up,alt-j:preview-down'
-    --padding 2%
-  )
-
-  pack_name=$(${helper} -Qq | fzf "${fzf_args[@]}" | tr '\n' ' ')
-
-  if [[ -n $pack_name ]]; then
-    ${helper} -Rns $pack_name
-  fi
-}
-
-pack-update() {
-  echo -e "Updating system packages..."
-  $helper -Syu
-  echo
-}
-
-pack-clear-helper-cache() {
-  $helper -Scc
-  echo
-}
-
-pack-list-aur() {
-  fzf_args=(
-    --multi
-    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-    --preview-window 'right:50%:wrap:border-bold'
-    --bind 'alt-p:toggle-preview'
-    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-    --bind 'alt-k:preview-up,alt-j:preview-down'
-    --padding 2%
-  )
-
-  pack_name=$(${helper} -Qqm | fzf "${fzf_args[@]}" | tr '\n' ' ')
-
-  if [[ -n $pack_name ]]; then
-    ${helper} -Rns $pack_name
-  fi
-}
-
-pack-list-recent() {
-  fzf_args=(
-    --multi
-    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-    --preview-window 'right:50%:wrap:border-bold'
-    --bind 'alt-p:toggle-preview'
-    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-    --bind 'alt-k:preview-up,alt-j:preview-down'
-    --padding 2%
-  )
-
-  # check if expac is installed
-
-  if [[ ! -f /bin/expac ]]; then
-    # ask user to install expac
-    read -p "This option relies to 'expac' and it is currently not installed. Do you want to install it? (Y/n): " expac_opt
-    if [[ "$expac_opt" == "y" || "$expac_opt" == "Y" || "$expac_opt" == "" ]]; then
-      sudo pacman -S expac
-      pack-list-installed
-    else
-      echo "User selected not to install expac. Going back to pack-list-installed()."
-      pack-list-installed
+    if [[ -n $pack_name ]]; then
+        ${helper} -S $pack_name
     fi
-  fi
-
-  pack_name=$(expac --timefmt='%Y-%m-%d %T' '%l\t%n' | sort | tail -200 | awk '{print $NF}' | tac | fzf "${fzf_args[@]}" | tr '\n' ' ')
-
-  if [[ -n $pack_name ]]; then
-    ${helper} -Rns $pack_name
-  fi
 }
 
-pack-list-orphaned() {
-  fzf_args=(
-    --multi
-    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-    --preview-window 'right:50%:wrap:border-bold'
-    --bind 'alt-p:toggle-preview'
-    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-    --bind 'alt-k:preview-up,alt-j:preview-down'
-    --padding 2%
-  )
+pack_uninstall() {
+    local fzf_args=(
+        --multi
+        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+        --preview-window 'right:50%:wrap:border-bold'
+        --bind 'alt-p:toggle-preview'
+        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+        --bind 'alt-k:preview-up,alt-j:preview-down'
+        --padding 2%
+    )
 
-  pack_name=$(${helper} -Qtdq | fzf "${fzf_args[@]}" | tr '\n' ' ')
+    local pack_name=$(${helper} -Qq | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-  if [[ -n $pack_name ]]; then
-    ${helper} -Rns $pack_name
-  fi
+    if [[ -n $pack_name ]]; then
+        ${helper} -Rns $pack_name
+    fi
 }
 
-pack-list-installed() {
-  choice=$(printf "List All Installed Packages\nList Recent Installed Packages\nOnly List Installed AUR Packages\nOnly List Orphaned Packages\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
-  case $choice in
-  "List All Installed Packages")
-    pack-uninstall
-    pack-list-installed
-    ;;
-  "List Recent Installed Packages")
-    pack-list-recent
-    pack-list-installed
-    ;;
-  "Only List Installed AUR Packages")
-    pack-list-aur
-    pack-list-installed
-    ;;
-  "Only List Orphaned Packages")
-    pack-list-orphaned
-    pack-list-installed
-    ;;
-  "Go Back")
-    pack-menu
-    ;;
-  *)
-    pack-menu
-    ;;
-  esac
+pack_update() {
+    echo -e "Updating system packages...\n"
+    ${helper} -Syu
+    echo
 }
 
-pack-menu() {
-  choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nAdvanced Options\nExit" | ${fzf_menu})
-  case $choice in
-  "Install Packages")
-    pack-install
-    pack-menu
-    ;;
-  "Remove Packages")
-    pack-list-installed
-    pack-menu
-    ;;
-  "Update System")
-    pack-update
-    pack-menu
-    ;;
-  "Advanced Options")
-    launch-adv-options
-    pack-menu
-    ;;
-  "Exit")
-    exit 0
-    ;;
-  *)
-    exit 1
-    ;;
-  esac
+pack_clear_helper_cache() {
+    ${helper} -Scc
+    echo
 }
 
-launch-adv-options() {
-  choice_adv=$(printf "Clear Helper Cache\nRegenerate Pack Cache\nGo Back" | ${fzf_menu})
-  case $choice_adv in
-  "Clear Helper Cache")
-    pack-clear-helper-cache
-    launch-adv-options
-    ;;
-  "Regenerate Pack Cache")
-    regen-pack-cache
-    ;;
-  "Go Back")
-    pack-menu
-    ;;
-  esac
+pack_list_aur() {
+    local fzf_args=(
+        --multi
+        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+        --preview-window 'right:50%:wrap:border-bold'
+        --bind 'alt-p:toggle-preview'
+        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+        --bind 'alt-k:preview-up,alt-j:preview-down'
+        --padding 2%
+    )
+
+    local pack_name=$(${helper} -Qqm | fzf "${fzf_args[@]}" | tr '\n' ' ')
+
+    if [[ -n $pack_name ]]; then
+        ${helper} -Rns $pack_name
+    fi
 }
 
-check-aur-helper
+pack_list_recent() {
+    local fzf_args=(
+        --multi
+        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+        --preview-window 'right:50%:wrap:border-bold'
+        --bind 'alt-p:toggle-preview'
+        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+        --bind 'alt-k:preview-up,alt-j:preview-down'
+        --padding 2%
+    )
+
+    if ! command -v expac >/dev/null 2>&1; then
+        echo "This feature requires 'expac'. Please install it first."
+        read -p "Press Enter to return..."
+        pack_list_installed
+        return
+    fi
+
+    local pack_name=$(expac --timefmt='%Y-%m-%d %T' '%l\t%n' 2>/dev/null | sort | tail -200 | awk '{print $NF}' | tac | fzf "${fzf_args[@]}" | tr '\n' ' ')
+
+    if [[ -n $pack_name ]]; then
+        ${helper} -Rns $pack_name
+    fi
+}
+
+pack_list_orphaned() {
+    local fzf_args=(
+        --multi
+        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+        --preview-window 'right:50%:wrap:border-bold'
+        --bind 'alt-p:toggle-preview'
+        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+        --bind 'alt-k:preview-up,alt-j:preview-down'
+        --padding 2%
+    )
+
+    local pack_name=$(${helper} -Qtdq | fzf "${fzf_args[@]}" | tr '\n' ' ')
+
+    if [[ -n $pack_name ]]; then
+        ${helper} -Rns $pack_name
+    fi
+}
+
+pack_list_installed() {
+    local choice=$(printf "List All Installed Packages\nList Recent Installed Packages\nOnly List Installed AUR Packages\nOnly List Orphaned Packages\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
+    case $choice in
+        "List All Installed Packages")
+            pack_uninstall
+            pack_list_installed
+            ;;
+        "List Recent Installed Packages")
+            pack_list_recent
+            pack_list_installed
+            ;;
+        "Only List Installed AUR Packages")
+            pack_list_aur
+            pack_list_installed
+            ;;
+        "Only List Orphaned Packages")
+            pack_list_orphaned
+            pack_list_installed
+            ;;
+        "Go Back")
+            pack_menu
+            ;;
+        *)
+            pack_menu
+            ;;
+    esac
+}
+
+pack_menu() {
+    local choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nAdvanced Options\nExit" | ${fzf_menu})
+    case $choice in
+        "Install Packages")
+            pack_install
+            pack_menu
+            ;;
+        "Remove Packages")
+            pack_list_installed
+            pack_menu
+            ;;
+        "Update System")
+            pack_update
+            pack_menu
+            ;;
+        "Advanced Options")
+            launch_adv_options
+            pack_menu
+            ;;
+        "Exit")
+            exit 0
+            ;;
+        *)
+            exit 1
+            ;;
+    esac
+}
+
+launch_adv_options() {
+    local choice_adv=$(printf "Clear Helper Cache\nRegenerate Pack Cache\nGo Back" | ${fzf_menu})
+    case $choice_adv in
+        "Clear Helper Cache")
+            pack_clear_helper_cache
+            launch_adv_options
+            ;;
+        "Regenerate Pack Cache")
+            regen_pack_cache
+            ;;
+        "Go Back")
+            pack_menu
+            ;;
+    esac
+}
+
+check_aur_helper
 
 case $1 in
-
-install)
-  pack-install
-  ;;
-remove)
-  pack-uninstall
-  ;;
-uninstall)
-  pack-uninstall
-  ;;
-update)
-  pack-update
-  ;;
-*)
-  pack-menu
-  ;;
+    install)
+        pack_install
+        ;;
+    remove|uninstall)
+        pack_uninstall
+        ;;
+    update)
+        pack_update
+        ;;
+    *)
+        pack_menu
+        ;;
 esac
