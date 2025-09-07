@@ -4,7 +4,7 @@
 Example usage here
 https://youtu.be/JOJlOmrX_ko?si=fVAuSbHqdI0H9N0Z
 
-### Install Pack
+### Installation
 Requires ``git``
 ```
 git clone https://github.com/elrondforwin/pack.git && cd pack && makepkg -si 
