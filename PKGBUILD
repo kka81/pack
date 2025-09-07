@@ -22,17 +22,15 @@ source=(
   "https://raw.githubusercontent.com/elrondforwin/pack/refs/heads/master/pack.desktop"
 )
 
-makedepends=(
-  'curl'
-)
-
 optdepends=(
   'paru: AUR support'
   'yay: AUR support'
 )
 
 package() {
+  echo "Installing pack..."
   install -Dm755 "$srcdir/pack" "$pkgdir/usr/bin/pack"
+  echo "Installing .desktop file for pack..."
   install -Dm644 "$srcdir/pack.desktop" "$pkgdir/usr/share/applications/pack.desktop"
 }
 
